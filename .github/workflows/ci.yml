@@ -1,0 +1,42 @@
+name: Auto Backup Python CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: pip install pytest pytest-cov flake8
+    
+    - name: Run tests
+      run: pytest tests/ -v
+    
+    - name: Run backup script
+      run: python backup.py
+    
+    - name: Verify backup created
+      run: |
+        if [ -d "backups" ]; then
+          echo "Backup directory created"
+          ls -la backups/
+        else
+          echo "Backup directory not found"
+          exit 1
+        fi
+    
+    - name: Lint
+      run: flake8 backup.py tests/ --max-line-length=100
