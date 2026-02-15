@@ -1,10 +1,19 @@
-# Auto-Backup Professional
+# Auto-Backup Professional v2.0
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 A robust, encrypted backup solution with automated lifecycle management.
 
 ## 🔒 Overview
 
-Auto-Backup Professional provides enterprise-grade backup capabilities with AES-128 encryption, LZMA compression, and intelligent rotation policies.
+Auto-Backup Professional provides enterprise-grade backup capabilities with:
+
+- **AES-128 Encryption** via Fernet (symmetric encryption)
+- **LZMA Compression** for maximum compression ratio
+- **SHA-256 Integrity Verification** 
+- **Automatic Retention Policies**
+- **Versioned Snapshots**
 
 ## 🚀 Quick Start
 
@@ -32,7 +41,9 @@ Create a `config.json` file:
     "interval_hours": 24,
     "retention_count": 5,
     "encryption_enabled": true,
-    "compression_level": 6
+    "compression_enabled": true,
+    "compression_level": 6,
+    "verify_integrity": true
 }
 ```
 
@@ -44,32 +55,88 @@ Create a `config.json` file:
 from backup.manager import BackupManager
 
 manager = BackupManager("./data", "./backups")
-manager.create_snapshot()
+manifest = manager.create_snapshot()
+print(f"Created: {manifest['name']}")
 ```
 
 ### Scheduled Backup
 
 ```python
-from backup.scheduler import schedule_backup
+import schedule
+import time
 
-schedule_backup(manager, interval_hours=12)
+def backup_job():
+    manager.create_snapshot()
+
+schedule.every(24).hours.do(backup_job)
+
+while True:
+    schedule.run_pending()
+    time.sleep(60)
+```
+
+### Restore Backup
+
+```python
+manager = BackupManager("./data", "./backups")
+restored_path = manager.restore_snapshot("backup_20240215_120000")
+print(f"Restored to: {restored_path}")
 ```
 
 ### Verify Integrity
 
 ```python
-from backup.scheduler import IntegrityVerifier
-
-hash_value = IntegrityVerifier.get_hash("backup.snapshot_xxx.tar.xz.enc")
-print(f"SHA256: {hash_value}")
+manager = BackupManager("./data", "./backups")
+if manager.verify_integrity("backup_20240215_120000"):
+    print("✓ Integrity verified")
 ```
+
+### Cleanup Old Snapshots
+
+```python
+manager = BackupManager("./data", "./backups")
+manager.cleanup_old_snapshots()
+```
+
+## 📊 Features
+
+| Feature | Description |
+|---------|-------------|
+| Encryption | AES-128-CBC via Fernet |
+| Compression | LZMA/XZ algorithm |
+| Integrity | SHA-256 checksums |
+| Retention | Configurable count-based |
+| Versioning | Timestamped snapshots |
 
 ## 🔐 Security
 
-- **Encryption**: AES-128 via Fernet (symmetric)
-- **Compression**: LZMA/XZ for maximum ratio
-- **Integrity**: SHA-256 checksums
+- **Encryption**: Fernet uses AES-128-CBC with PKCS7 padding and HMAC-SHA256 for authentication
+- **Key Management**: Keys stored in `.encryption_key` file in backup directory
+- **Integrity**: Every snapshot includes SHA-256 hash for verification
+
+## 📁 Project Structure
+
+```
+auto-backup-py/
+├── backup.py           # Main backup manager
+├── config.json         # Configuration file
+├── requirements.txt    # Dependencies
+├── data/              # Source data directory
+├── backups/           # Backup storage directory
+└── README.md
+```
+
+## 🛠️ Dependencies
+
+```
+cryptography>=3.0
+```
 
 ## 📝 License
 
-MIT License
+MIT License - See [LICENSE](LICENSE) for details.
+
+## 👤 Author
+
+**Olivier Robert-Duboille**  
+GitHub: https://github.com/Brainfeed-1996
